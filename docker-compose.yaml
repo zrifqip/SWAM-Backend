@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  db:
+    image: mongo:5.0.9-focal
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mongodbdata:/data/db
+  api:
+    build: .
+    ports:
+      - "8080:5000"
+    restart: always
+    env_file:
+      - config.env
+    depends_on:
+      - db
+    volumes:
+      - imagedata:/app/public/images
+volumes:
+  mongodbdata:
+    driver: local
+  imagedata:
+    driver: local

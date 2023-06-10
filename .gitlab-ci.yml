@@ -1,0 +1,35 @@
+stages:
+  - test
+  - build
+
+api:test:
+  stage: test
+  image: node:12.22-alpine
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules
+  only:
+    - merge_requests
+  before_script:
+    - cp "$ENV_DEV" .env
+    - npm install -g npm@8.5.1
+    - npm install
+  script:
+    - npm start &
+    - npm test
+
+api:build:
+  stage: build
+  image: docker:23.0.6-alpine3.18
+  services:
+    - docker:23.0.6-dind-alpine3.18
+  only:
+    refs:
+      - main
+  script:
+    - docker login -u $CI_REGISTRY_USERNAME -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
