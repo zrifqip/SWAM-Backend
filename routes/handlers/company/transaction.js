@@ -37,6 +37,11 @@ module.exports = {
             foreignField: "_id",
             pipeline: [
               {
+                $match: {
+                  companyID: mongoose.Types.ObjectId(req.organization._id),
+                },
+              },
+              {
                 $project: {
                   fullName: "$fullName",
                   sex: "$sex",
@@ -50,13 +55,55 @@ module.exports = {
         },
         { $unwind: "$Customer" },
         {
+          $lookup: {
+            from: DetailTransaction.collection.name,
+            localField: "_id",
+            foreignField: "transactionID",
+            pipeline: [
+              {
+                $lookup: {
+                  from: Item.collection.name,
+                  localField: "itemID",
+                  foreignField: "_id",
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 0,
+                        id: "$_id",
+                        name: "$name",
+                        category: "$category",
+                        price: "$purchasePrice",
+                      },
+                    },
+                  ],
+                  as: "Item",
+                },
+              },
+              { $unwind: "$Item" },
+              {
+                $project: {
+                  _id: "$Item.id",
+                  weight: "$weight",
+                  price: "$Item.price",
+                  totalPrice: {
+                    $sum: { $multiply: ["$weight", "$Item.price"] },
+                  },
+                },
+              },
+            ],
+            as: "Details",
+          },
+        },
+        {
           $project: {
             _id: "$_id",
             deliveryType: "$deliveryType",
             status: "$status",
             customer: "$Customer",
-            schedule: "$Schedule",
+            totalPrice: { $sum: "$Details.totalPrice" },
+            totalWeight: { $sum: "$Details.weight" },
             images: "$images",
+            date: "$createdAt",
           },
         },
       ]),

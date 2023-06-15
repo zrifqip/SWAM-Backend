@@ -78,19 +78,30 @@ module.exports = {
           foreignField: "_id",
           pipeline: [
             {
+              $lookup: {
+                from: "usercompanies",
+                localField: "companyID",
+                foreignField: "_id",
+                as: "Company",
+              },
+            },
+            {
+              $unwind: "$Company",
+            },
+            {
               $project: {
                 _id: "$_id",
-                fullName: "$fullName",
-                sex: "$sex",
-                phone: "$phoneNumber",
-                address: "$address",
+                name: "$Company.companyName",
+                nameCEO: "$Company.nameCEO",
+                photo: "$Company.image",
+                address: "$Company.address",
               },
             },
           ],
-          as: "Customer",
+          as: "Company",
         },
       },
-      { $unwind: "$Customer" },
+      { $unwind: "$Company" },
       {
         $project: {
           _id: "$_id",
@@ -98,8 +109,6 @@ module.exports = {
           destination: "$destination",
           detail: "$Details",
           company: "$Company",
-          schedule: "$Schedule",
-          customer: "$Customer",
           totalPrice: { $sum: "$Details.totalPrice" },
           note: "$note",
           status: "$status",
@@ -122,13 +131,101 @@ module.exports = {
   }),
   listTrans: catchAsync(async (req, res, next) => {
     const features = new apiFeature(
-      Transaction.find({ customerID: req.biodata._id }).sort({
-        createdAt: "desc",
-      }),
+      Transaction.aggregate([
+        {
+          $match: {
+            customerID: mongoose.Types.ObjectId(req.biodata._id),
+          },
+        },
+        {
+          $lookup: {
+            from: "userclients",
+            localField: "customerID",
+            foreignField: "_id",
+            pipeline: [
+              {
+                $lookup: {
+                  from: "usercompanies",
+                  localField: "companyID",
+                  foreignField: "_id",
+                  as: "Company",
+                },
+              },
+              {
+                $unwind: "$Company",
+              },
+              {
+                $project: {
+                  _id: "$_id",
+                  name: "$Company.companyName",
+                  nameCEO: "$Company.nameCEO",
+                  photo: "$Company.image",
+                },
+              },
+            ],
+            as: "Company",
+          },
+        },
+        {
+          $unwind: "$Company",
+        },
+        {
+          $lookup: {
+            from: DetailTransaction.collection.name,
+            localField: "_id",
+            foreignField: "transactionID",
+            pipeline: [
+              {
+                $lookup: {
+                  from: Item.collection.name,
+                  localField: "itemID",
+                  foreignField: "_id",
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 0,
+                        id: "$_id",
+                        name: "$name",
+                        category: "$category",
+                        price: "$purchasePrice",
+                      },
+                    },
+                  ],
+                  as: "Item",
+                },
+              },
+              { $unwind: "$Item" },
+              {
+                $project: {
+                  _id: "$Item.id",
+                  weight: "$weight",
+                  price: "$Item.price",
+                  totalPrice: {
+                    $sum: { $multiply: ["$weight", "$Item.price"] },
+                  },
+                },
+              },
+            ],
+            as: "Details",
+          },
+        },
+        {
+          $project: {
+            _id: "$_id",
+            deliveryType: "$deliveryType",
+            status: "$status",
+            company: "$Company",
+            totalPrice: { $sum: "$Details.totalPrice" },
+            totalWeight: { $sum: "$Details.weight" },
+            images: "$images",
+            date: "$createdAt",
+          },
+        },
+      ]),
       req.query
     )
-      .paginate()
-      .filter();
+      .sort()
+      .paginate();
 
     const transactionData = await features.query;
 
