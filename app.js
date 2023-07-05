@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const http = require('http');
 const debug = require('debug')('backend-project:server');
-const { Server } = require("socket.io");
+const { Server } = require('socket.io');
 
 const httpHelper = require('./helpers/http');
 const AppErr = require('./helpers/AppError');
@@ -22,8 +22,9 @@ const indexRouter = require('./routes/index');
 const clientRouter = require('./routes/client');
 const companyRouter = require('./routes/company');
 const wsHandler = require('./routes/handlers/websocket');
+const initView = require('./helpers/InitView');
 
-const port = httpHelper.normalizePort( process.env.PORT || '3000');
+const port = httpHelper.normalizePort(process.env.PORT || '3000');
 
 const app = express();
 
@@ -31,7 +32,7 @@ mongoose
   .connect(process.env.DB, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    authSource: 'admin'
+    authSource: 'admin',
   })
   .then(() => console.log('Database Connection Successful!'));
 
@@ -77,11 +78,12 @@ let server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
-  }
+    origin: '*',
+  },
 });
 //chat
-wsHandler(io)
+wsHandler(io);
+initView(mongoose.connection);
 
 server.listen(port);
 server.on('error', httpHelper.onError);
@@ -90,6 +92,5 @@ server.on('listening', () => {
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
 });
-
 
 module.exports = app;

@@ -2,6 +2,7 @@
 const Item = require('../../../models/Item');
 const ItemCategory = require('../../../models/ItemCategory');
 const User = require('../../../models/userCompany');
+const DetailTransactionN = require('../../../models/DetailTransactionN');
 // const Factory = require('./handlerFactory');
 // Lib Import
 const apiFeature = require('../../../helpers/apiFeature');
@@ -11,6 +12,7 @@ const v = new Validator();
 // Error Handler
 const catchAsync = require('../../../helpers/catchAsync');
 const AppErr = require('../../../helpers/AppError');
+const { default: mongoose } = require('mongoose');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -24,19 +26,19 @@ module.exports = {
   getItemCategory: catchAsync(async (req, res, next) => {
     const itemCategory = await ItemCategory.find({
       userID: {
-        $in: [req.organization._id, null]
-      }
+        $in: [req.organization._id, null],
+      },
     });
     return res.status(200).json({
       status: 'success',
-      data: itemCategory
+      data: itemCategory,
     });
   }),
   createCategory: catchAsync(async (req, res, next) => {
     let { name, type, desc } = req.body;
     const schema = {
-      name: 'string|empty:false'
-    }
+      name: 'string|empty:false',
+    };
     const valid = v.validate(req.body, schema);
 
     if (valid.length) {
@@ -50,21 +52,16 @@ module.exports = {
       name,
       userID: req.organization._id,
       type,
-      desc
-    })
+      desc,
+    });
 
     return res.status(200).json({
       status: 'success',
-      data: category
+      data: category,
     });
   }),
   updateCategory: catchAsync(async (req, res, next) => {
-    const filteredBody = filterObj(
-      req.body,
-      'name',
-      'desc',
-      'type'
-    );
+    const filteredBody = filterObj(req.body, 'name', 'desc', 'type');
 
     const updateItem = await ItemCategory.findByIdAndUpdate(
       req.query.id,
@@ -81,10 +78,19 @@ module.exports = {
     });
   }),
   createItem: catchAsync(async (req, res, next) => {
-    let { name, category, note, sellingPrice, purchasePrice, isSell, imageCover, images } = req.body;
-    weight = parseInt(req.body.weight),
-      sell = parseInt(req.body.sell),
-      buying = parseInt(req.body.buying)
+    let {
+      name,
+      category,
+      note,
+      sellingPrice,
+      purchasePrice,
+      isSell,
+      imageCover,
+      images,
+    } = req.body;
+    (weight = parseInt(req.body.weight)),
+      (sell = parseInt(req.body.sell)),
+      (buying = parseInt(req.body.buying));
     const schema = {
       weight: 'number|optional|empty:true',
       purchasePrice: 'number|integer|positive',
@@ -96,8 +102,8 @@ module.exports = {
           _id: 'string|empty:false',
           name: 'string|empty:false',
           desc: 'string',
-        }
-      }
+        },
+      },
     };
     const valid = v.validate(req.body, schema);
 
@@ -123,7 +129,7 @@ module.exports = {
 
     res.status(201).json({
       status: 'success',
-      data: dataItem
+      data: dataItem,
     });
   }),
   updateItem: catchAsync(async (req, res, next) => {
@@ -197,6 +203,52 @@ module.exports = {
     res.status(200).json({
       status: 'success',
       data: itemData,
+    });
+  }),
+  summaryItem: catchAsync(async (req, res, next) => {
+    const { month, year } = req.query;
+    const matchQuery = {
+      companyId: mongoose.Types.ObjectId(req.organization._id),
+    };
+    const groupBy = {
+      item_id: '$item_id',
+    };
+
+    if (year) {
+      matchQuery['date.year'] = parseInt(year);
+      groupBy['year'] = '$date.year';
+    }
+    if (month) {
+      matchQuery['date.month'] = parseInt(month);
+      groupBy['month'] = '$date.month';
+    }
+
+    const summary = await DetailTransactionN.aggregate([
+      {
+        $match: matchQuery,
+      },
+      {
+        $group: {
+          _id: groupBy,
+          item_name: { $first: '$item_name' },
+          total_weight: {
+            $sum: '$weight',
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          item_id: '$_id.item_id',
+          item_name: '$item_name',
+          total_weight: '$total_weight',
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: summary,
     });
   }),
 };

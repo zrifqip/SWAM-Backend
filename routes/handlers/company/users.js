@@ -3,6 +3,7 @@ const Account = require('../../../models/AccountM');
 const UserClient = require('../../../models/userCompany');
 const userCompany = require('../../../models/userCompany');
 const RefreshToken = require('../../../models/RefreshToken');
+const DetailTransactionN = require('../../../models/DetailTransactionN');
 
 const apiFeature = require('../../../helpers/apiFeature');
 // Validation Handler
@@ -18,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 // Forgot password
 const sendMail = require('../../../helpers/email');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
 
 const filterObj = (obj, ...allowedFields) => {
@@ -46,7 +48,7 @@ module.exports = {
       phoneNumber,
       address,
       role,
-      coordinates
+      coordinates,
     } = req.body;
 
     const schema = {
@@ -55,7 +57,12 @@ module.exports = {
         enum: ['pt', 'maatschap', 'cv', 'firma', 'yayasan', 'koperasi', 'bumn'],
         empty: false,
       },
-      companyService:  { type: 'array', items: "string", enum: ['pickup', 'self-delivery'], empty: false },
+      companyService: {
+        type: 'array',
+        items: 'string',
+        enum: ['pickup', 'self-delivery'],
+        empty: false,
+      },
       companyName: 'string|empty:false',
       role: {
         type: 'string',
@@ -66,7 +73,7 @@ module.exports = {
       phoneNumber: {
         type: 'string',
         maxlength: 15,
-        empty: false
+        empty: false,
       },
       address: {
         type: 'object',
@@ -82,7 +89,7 @@ module.exports = {
           district: 'string|optional:true',
           street: 'string|optional:true',
           postalCode: 'number|optional:true',
-        }
+        },
       },
     };
 
@@ -114,7 +121,7 @@ module.exports = {
       companyService,
       nameCEO,
       address,
-      coordinates
+      coordinates,
     });
 
     res.status(200).json({
@@ -122,7 +129,7 @@ module.exports = {
       message: `Success Register`,
       data: {
         id: data.id,
-        role
+        role,
       },
     });
   }),
@@ -201,7 +208,7 @@ module.exports = {
       data: {
         token: token,
         refresh_token: refresh_tokens.token,
-        role: user.role
+        role: user.role,
       },
     });
   }),
@@ -223,7 +230,7 @@ module.exports = {
                 service: '$companyService',
                 address: '$address',
                 image: '$image',
-                minimumWithdrawal: '$minimumWithdrawal'
+                minimumWithdrawal: '$minimumWithdrawal',
               },
             },
           ],
@@ -232,9 +239,9 @@ module.exports = {
       },
       {
         $unwind: {
-            path: "$Organization",
-            preserveNullAndEmptyArrays: true
-        }
+          path: '$Organization',
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $project: {
@@ -469,28 +476,32 @@ module.exports = {
       message: `Success Logout`,
     });
   }),
-  allBankSampah: catchAsync( async (req, res, next) => {
-    const features = new apiFeature(userCompany.aggregate([
-      {
-        $lookup: {
+  allBankSampah: catchAsync(async (req, res, next) => {
+    const features = new apiFeature(
+      userCompany.aggregate([
+        {
+          $lookup: {
             from: Account.collection.name,
             localField: 'accountID',
             foreignField: '_id',
             pipeline: [
               {
                 $match: {
-                  role: 'bank-sampah'
-                }
-              }
-          ],
-          as: 'Account'
-      }
-    }, {
-      $unwind: {
-        path: '$Account'
-      }
-    }
-    ]), req.query).paginate();
+                  role: 'bank-sampah',
+                },
+              },
+            ],
+            as: 'Account',
+          },
+        },
+        {
+          $unwind: {
+            path: '$Account',
+          },
+        },
+      ]),
+      req.query
+    ).paginate();
 
     const companyData = await features.query;
 
@@ -503,5 +514,93 @@ module.exports = {
       length: companyData.length,
       data: companyData,
     });
-  })
+  }),
+  stockBankSampah: catchAsync(async (req, res, next) => {
+    const summary = await DetailTransactionN.aggregate([
+      {
+        $match: {
+          companyId: mongoose.Types.ObjectId(req.query.id),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            item_id: '$item_id',
+          },
+          item_name: { $first: '$item_name' },
+          total_weight: {
+            $sum: '$weight',
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          item_id: '$_id.item_id',
+          item_name: '$item_name',
+          total_weight: '$total_weight',
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: summary,
+    });
+  }),
+  dashboardBankSampah: catchAsync(async (req, res, next) => {
+    const { month, year } = req.query;
+    const matchQuery = {};
+    const groupBy = {
+      companyId: '$companyId',
+    };
+
+    if (year) {
+      matchQuery['date.year'] = parseInt(year);
+      groupBy['year'] = '$date.year';
+    }
+    if (month) {
+      matchQuery['date.month'] = parseInt(month);
+      groupBy['month'] = '$date.month';
+    }
+
+    const summary = await DetailTransactionN.aggregate([
+      {
+        $match: matchQuery,
+      },
+      {
+        $group: {
+          _id: groupBy,
+          item_name: { $first: '$item_name' },
+          total_weight: {
+            $sum: '$weight',
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'usercompanies',
+          localField: '_id.companyId',
+          foreignField: '_id',
+          as: 'Company',
+        },
+      },
+      {
+        $unwind: '$Company',
+      },
+      {
+        $project: {
+          _id: 0,
+          companyId: '$_id.companyId',
+          companyName: '$Company.companyName',
+          total_weight: '$total_weight',
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: summary,
+    });
+  }),
 };
