@@ -42,7 +42,7 @@ module.exports = {
         },
       ]),
       req.query
-    ).paginate();
+    );
 
     const customerData = await features.query;
 
