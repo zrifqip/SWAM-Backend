@@ -238,6 +238,7 @@ module.exports = {
         type: 'array',
         itemID: 'string|empty:false',
         weight: 'string|empty:false',
+        price: 'number|empty:false',
       },
     };
     const valid = v.validate(req.body, schema);
@@ -257,6 +258,8 @@ module.exports = {
 
     for (let i = 0; i < item.length; i++) {
       const checkItem = await Item.findById(item[i].itemID);
+
+      console.log("price : "  + item[i].price)
       if (!checkItem) {
         return next(new AppErr('No document found with that item', 404));
       }
@@ -264,6 +267,7 @@ module.exports = {
         transactionID: trans._id,
         itemID: item[i].itemID,
         weight: item[i].weight,
+        price: item[i].price
       });
     }
 
