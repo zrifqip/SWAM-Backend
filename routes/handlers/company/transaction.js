@@ -118,7 +118,6 @@ module.exports = {
     if (transactionData.length == 0) {
       new AppErr('No document found with that Transaction ID', 404);
     }
-    console.log(transactionData)
     res.status(200).json({
       message: 'success',
       length: transactionData.length,

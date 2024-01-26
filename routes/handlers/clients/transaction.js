@@ -62,8 +62,8 @@ module.exports = {
                 name: '$Item.name',
                 item: '$Item.category',
                 weight: '$weight',
-                price: '$Item.price',
-                totalPrice: { $sum: { $multiply: ['$weight', '$Item.price'] } },
+                price: '$price',
+                totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
                 status: '$status',
               },
             },
@@ -123,7 +123,6 @@ module.exports = {
         new AppErr('No document found with that Transaction ID', 404)
       );
     }
-    console.log(checkTrans[0]);
     res.status(200).json({
       message: 'success',
       data: checkTrans[0],
@@ -199,9 +198,9 @@ module.exports = {
                 $project: {
                   _id: '$Item.id',
                   weight: '$weight',
-                  price: '$Item.price',
+                  price: '$price',
                   totalPrice: {
-                    $sum: { $multiply: ['$weight', '$Item.price'] },
+                    $sum: { $multiply: ['$weight', '$price'] },
                   },
                 },
               },
