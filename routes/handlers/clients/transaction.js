@@ -123,7 +123,7 @@ module.exports = {
         new AppErr('No document found with that Transaction ID', 404)
       );
     }
-
+    console.log(checkTrans[0]);
     res.status(200).json({
       message: 'success',
       data: checkTrans[0],
