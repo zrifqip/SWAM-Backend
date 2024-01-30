@@ -86,7 +86,7 @@ module.exports = {
                   weight: '$weight',
                   price: '$Item.price',
                   totalPrice: {
-                    $sum: { $multiply: ['$weight', '$Item.price'] },
+                    $sum: { $multiply: ['$weight', '$price'] },
                   },
                 },
               },
@@ -118,7 +118,6 @@ module.exports = {
     if (transactionData.length == 0) {
       new AppErr('No document found with that Transaction ID', 404);
     }
-
     res.status(200).json({
       message: 'success',
       length: transactionData.length,
@@ -160,8 +159,8 @@ module.exports = {
                 name: '$Item.name',
                 item: '$Item.category',
                 weight: '$weight',
-                price: '$Item.price',
-                totalPrice: { $sum: { $multiply: ['$weight', '$Item.price'] } },
+                price: '$price',
+                totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
                 status: '$status',
               },
             },
@@ -223,7 +222,6 @@ module.exports = {
         new AppErr('No document found with that Transaction ID', 404)
       );
     }
-
     res.status(200).json({
       message: 'success',
       data: checkTrans[0],
@@ -238,6 +236,7 @@ module.exports = {
         type: 'array',
         itemID: 'string|empty:false',
         weight: 'string|empty:false',
+        price: 'number|empty:false',
       },
     };
     const valid = v.validate(req.body, schema);
@@ -257,6 +256,7 @@ module.exports = {
 
     for (let i = 0; i < item.length; i++) {
       const checkItem = await Item.findById(item[i].itemID);
+
       if (!checkItem) {
         return next(new AppErr('No document found with that item', 404));
       }
@@ -264,6 +264,7 @@ module.exports = {
         transactionID: trans._id,
         itemID: item[i].itemID,
         weight: item[i].weight,
+        price: item[i].price
       });
     }
 
