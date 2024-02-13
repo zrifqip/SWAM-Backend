@@ -17,6 +17,10 @@ const detailTransactionSchema = new Mongoose.Schema(
       type: Number,
       required: true,
     },
+    name: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
