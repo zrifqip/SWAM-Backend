@@ -199,7 +199,6 @@ module.exports = {
     if (!itemData || itemData == null) {
       return next(new AppErr('No item found with that ID', 404));
     }
-
     res.status(200).json({
       status: 'success',
       data: itemData,

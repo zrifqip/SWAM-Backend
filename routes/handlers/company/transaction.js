@@ -61,30 +61,9 @@ module.exports = {
             foreignField: 'transactionID',
             pipeline: [
               {
-                $lookup: {
-                  from: Item.collection.name,
-                  localField: 'itemID',
-                  foreignField: '_id',
-                  pipeline: [
-                    {
-                      $project: {
-                        _id: 0,
-                        id: '$_id',
-                        name: '$name',
-                        category: '$category',
-                        price: '$purchasePrice',
-                      },
-                    },
-                  ],
-                  as: 'Item',
-                },
-              },
-              { $unwind: '$Item' },
-              {
                 $project: {
-                  _id: '$Item.id',
                   weight: '$weight',
-                  price: '$Item.price',
+                  price: '$price',
                   totalPrice: {
                     $sum: { $multiply: ['$weight', '$price'] },
                   },
@@ -118,6 +97,7 @@ module.exports = {
     if (transactionData.length == 0) {
       new AppErr('No document found with that Transaction ID', 404);
     }
+
     res.status(200).json({
       message: 'success',
       length: transactionData.length,
@@ -133,31 +113,11 @@ module.exports = {
           localField: '_id',
           foreignField: 'transactionID',
           pipeline: [
-            {
-              $lookup: {
-                from: Item.collection.name,
-                localField: 'itemID',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 0,
-                      id: '$_id',
-                      name: '$name',
-                      category: '$category',
-                      price: '$purchasePrice',
-                    },
-                  },
-                ],
-                as: 'Item',
-              },
-            },
-            { $unwind: '$Item' },
+
             {
               $project: {
-                _id: '$Item.id',
-                name: '$Item.name',
-                item: '$Item.category',
+                name: '$name',
+                // item: '$Item.category',
                 weight: '$weight',
                 price: '$price',
                 totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
@@ -229,7 +189,6 @@ module.exports = {
   }),
   createTrans: catchAsync(async (req, res, next) => {
     const { item, customerID } = req.body;
-
     const schema = {
       customerID: 'string|empty:false',
       item: {
@@ -237,6 +196,7 @@ module.exports = {
         itemID: 'string|empty:false',
         weight: 'string|empty:false',
         price: 'number|empty:false',
+        name: 'string|empty:false',
       },
     };
     const valid = v.validate(req.body, schema);
@@ -264,7 +224,8 @@ module.exports = {
         transactionID: trans._id,
         itemID: item[i].itemID,
         weight: item[i].weight,
-        price: item[i].price
+        price: item[i].price,
+        name: item[i].name,
       });
     }
 
@@ -320,7 +281,6 @@ module.exports = {
         }, 0),
       },
     });
-
     res.status(201).json({
       status: 'success',
       data: { id: trans._id },

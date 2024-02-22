@@ -37,30 +37,9 @@ module.exports = {
           foreignField: 'transactionID',
           pipeline: [
             {
-              $lookup: {
-                from: Item.collection.name,
-                localField: 'itemID',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 0,
-                      id: '$_id',
-                      name: '$name',
-                      category: '$category',
-                      price: '$purchasePrice',
-                    },
-                  },
-                ],
-                as: 'Item',
-              },
-            },
-            { $unwind: '$Item' },
-            {
               $project: {
                 _id: '$Item.id',
-                name: '$Item.name',
-                item: '$Item.category',
+                name: '$name',
                 weight: '$weight',
                 price: '$price',
                 totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
@@ -175,28 +154,7 @@ module.exports = {
             foreignField: 'transactionID',
             pipeline: [
               {
-                $lookup: {
-                  from: Item.collection.name,
-                  localField: 'itemID',
-                  foreignField: '_id',
-                  pipeline: [
-                    {
-                      $project: {
-                        _id: 0,
-                        id: '$_id',
-                        name: '$name',
-                        category: '$category',
-                        price: '$purchasePrice',
-                      },
-                    },
-                  ],
-                  as: 'Item',
-                },
-              },
-              { $unwind: '$Item' },
-              {
                 $project: {
-                  _id: '$Item.id',
                   weight: '$weight',
                   price: '$price',
                   totalPrice: {
