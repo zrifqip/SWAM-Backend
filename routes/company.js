@@ -72,6 +72,7 @@ router
 router.get('/schedule/:slug', scheduleHandler.getSchedule);
 // Enpoint Transaction
 router.get('/transaction/all', transactionHandler.listTrans);
+router.get('/transaction/summary', transactionHandler.summaryTransaction);
 router
   .route('/transaction')
   .get(transactionHandler.detailTrans)

@@ -286,4 +286,127 @@ module.exports = {
       data: { id: trans._id },
     });
   }),
+
+
+  summaryTransaction: catchAsync(async (req, res, next) => {
+    const { month, year } = req.query;
+    const matchQuery = {};
+
+    if (year) {
+      matchQuery['year'] = parseInt(year);
+    }
+    if (month) {
+      matchQuery['month'] = parseInt(month);
+    }
+    console.log(matchQuery)
+    const summary = await Transaction.aggregate([
+      {
+        $lookup: {
+          from: userClient.collection.name,
+          localField: "customerID",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $match: {
+                companyID: mongoose.Types.ObjectId(req.organization._id),
+              },
+            },
+            {
+              $project: {
+                fullName: "$fullName",
+                sex: "$sex",
+                photo: "$photo",
+                balance: "$balance",
+              },
+            },
+          ],
+          as: "Customer",
+        },
+      },
+      {
+        $unwind: "$Customer",
+      },
+      {
+        $lookup: {
+          from: DetailTransaction.collection.name,
+          localField: "_id",
+          foreignField: "transactionID",
+          pipeline: [
+            {
+              $project: {
+                weight: "$weight",
+                price: "$price",
+                totalPrice: {
+                  $sum: {
+                    $multiply: ["$weight", "$price"],
+                  },
+                },
+              },
+            },
+          ],
+          as: "Details",
+        },
+      },
+      {
+        $project: {
+          totalPrice: {
+            $sum: "$Details.totalPrice",
+          },
+          year: {
+            $year: "$createdAt",
+          },
+          month: {
+            $month: "$createdAt",
+          },
+          day: {
+            $dayOfMonth: "$createdAt",
+          },
+          date: {
+            $dayOfYear: "$createdAt",
+          },
+        },
+      },
+      {
+        $match: matchQuery,
+      },
+      {
+        $group: {
+          _id: "$date",
+          // Group by the formatted date
+          year: {
+            $first: "$year",
+          },
+          // Retain the year
+          month: {
+            $first: "$month",
+          },
+          // Retain the month
+          day: {
+            $first: "$day",
+          },
+          // Retain the day
+          totalSum: {
+            $sum: "$totalPrice",
+          }, // Calculate the total price for each day
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+    ]);
+  
+
+    console.log(summary)
+
+    res.status(200).json({
+      status: 'success',
+      data: summary,
+    });
+  }),
+
 };
+
+
+
