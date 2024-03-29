@@ -11,7 +11,13 @@ const v = new Validator();
 const mongoose = require("mongoose");
 const UserClient = require("../../../models/UserClient");
 const Account = require("../../../models/AccountM");
-
+const filterObj = (obj, ...allowedFields) => {
+  const newObj = {};
+  Object.keys(obj).forEach((el) => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
 module.exports = {
   list: catchAsync(async (req, res, next) => {
     const features = new apiFeature(
@@ -88,36 +94,35 @@ module.exports = {
     });
   }),
   Edit: catchAsync(async (req, res, next) => {
-    const filteredUserBody = filterObj(
-      req.body,
-      'fullName', 'sex', 'address'
-    );
-  
+    const filteredUserBody = filterObj(req.body, "fullName", "address");
+    console.log(filteredUserBody)
     const updatedUser = await UserClient.findByIdAndUpdate(
-      req.params.id,
+      req.query.id,
       filteredUserBody,
       { new: true, runValidators: true }
     );
-  
+
     if (!updatedUser) {
-      return next(new AppErr('No user found with that ID', 404));
+      return next(new AppErr("No user found with that ID", 404));
     }
     if (req.body.phoneNumber) {
       const updatedAccount = await Account.findByIdAndUpdate(
-        updatedUser.accountID, // Assuming this is how you link UserClient to Account
+        updatedUser.accountID,
         { phoneNumber: req.body.phoneNumber },
         { new: true, runValidators: true }
       );
-  
+
       if (!updatedAccount) {
-        return next(new AppErr('Related account not found or update failed', 404));
+        return next(
+          new AppErr("Related account not found or update failed", 404)
+        );
       }
     }
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: {
         user: updatedUser,
-      }
+      },
     });
   }),
   getCustomer: catchAsync(async (req, res, next) => {
@@ -136,7 +141,7 @@ module.exports = {
 
     res.status(200).json({
       status: "success",
-      data: query
+      data: query,
     });
   }),
 };
