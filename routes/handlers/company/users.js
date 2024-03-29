@@ -432,7 +432,7 @@ module.exports = {
     const { password, passwordConfirm, passwordCurrent } = req.body;
 
     // 1) Get user from collection
-    const user = await Account.findById(req.user[0].id).select('+password');
+      const user = await Account.findById(req.user[0].id).select('+password');
     // 2) Check if POSTed current password is correct
     if (!(await user.correctPassword(passwordCurrent, user.password))) {
       return next(new AppErr('Your current password is wrong.', 401));
@@ -441,7 +441,7 @@ module.exports = {
     const schema = {
       password: 'string|empty:false|min:8',
       passwordConfirm: { type: 'equal', field: 'password' },
-    };
+    };    
 
     const validate = v.validate(req.body, schema);
 

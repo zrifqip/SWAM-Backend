@@ -123,8 +123,6 @@ module.exports = {
       weight,
       isSell,
       note,
-      // imageCover: req.imageCover,
-      // images: req.images,
     });
 
     res.status(201).json({

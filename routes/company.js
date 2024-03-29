@@ -82,7 +82,10 @@ router
   .get(withdrawHandler.list)
   .patch(withdrawHandler.update);
 
-router.get('/customer', customerHandler.list);
+router.get('/customer', customerHandler.list)
+      .patch('/customer', customerHandler.Update)
+router.get('/customer/detail/:slug', customerHandler.getCustomer)
+      .patch('/customer/detail/:id', customerHandler.Edit);
 router.post('/startchat', chatHandler.start);
 router.get('/chat', chatHandler.list);
 
