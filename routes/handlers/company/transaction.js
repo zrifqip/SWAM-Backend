@@ -298,7 +298,6 @@ module.exports = {
     if (month) {
       matchQuery['month'] = parseInt(month);
     }
-    console.log(matchQuery)
     const summary = await Transaction.aggregate([
       {
         $lookup: {
@@ -397,8 +396,6 @@ module.exports = {
       },
     ]);
   
-
-    console.log(summary)
 
     res.status(200).json({
       status: 'success',
