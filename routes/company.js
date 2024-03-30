@@ -20,7 +20,6 @@ const chatHandler = require("./handlers/company/chat");
 const customerHandler = require("./handlers/company/customer");
 const roleC = require("../middlewares/roleUser");
 const checkVersion = require("../middlewares/Appversion");
-const customer = require("./handlers/company/customer");
 
 // Collector
 // Token
@@ -84,8 +83,9 @@ router
   .patch(withdrawHandler.update);
 
 router
-  .get("/customer", customerHandler.list)
-  .patch("/customer", customerHandler.Update);
+  .route("/customer")
+  .get(customerHandler.list)
+  .patch(customerHandler.Update);
 router.get("/customer/detail/:slug", customerHandler.getCustomer);
 router.patch("/customer/detail", customerHandler.Edit);
 

@@ -64,10 +64,8 @@ module.exports = {
     });
   }),
   Update: catchAsync(async (req, res, next) => {
-    console.log(req);
     const filteredBody = filterObj(req.body, "balance", "fullName", "address");
     const account = await Account.findOne({ phoneNumber: req.query.id });
-    console.log(account);
     if (!account) {
       return next(new AppErr("Akun Tidak Ditemukan", 404));
     }
@@ -79,18 +77,16 @@ module.exports = {
 
     if (user.companyID) {
       return res.status(404).json({
+        status:"Error",
         message: "User sudah memiliki Bank Sampah Lain",
-        userId: user._id,
-        companyId: user.companyID,
       });
     }
     user.companyID = mongoose.Types.ObjectId(req.organization._id);
     await user.save();
 
     res.status(200).json({
+      status : "success",
       message: "Bank Sampah Berhasil Diperbaharui",
-      userId: user._id,
-      companyId: user.companyID,
     });
   }),
   Edit: catchAsync(async (req, res, next) => {
