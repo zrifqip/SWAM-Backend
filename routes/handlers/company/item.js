@@ -1,18 +1,18 @@
 // Model Import
-const Item = require('../../../models/Item');
-const ItemCategory = require('../../../models/ItemCategory');
-const User = require('../../../models/userCompany');
-const DetailTransactionN = require('../../../models/DetailTransactionN');
+const Item = require("../../../models/Item");
+const ItemCategory = require("../../../models/ItemCategory");
+const User = require("../../../models/userCompany");
+const DetailTransactionN = require("../../../models/DetailTransactionN");
 // const Factory = require('./handlerFactory');
 // Lib Import
-const apiFeature = require('../../../helpers/apiFeature');
+const apiFeature = require("../../../helpers/apiFeature");
 // Validation Handler
-const Validator = require('fastest-validator');
+const Validator = require("fastest-validator");
 const v = new Validator();
 // Error Handler
-const catchAsync = require('../../../helpers/catchAsync');
-const AppErr = require('../../../helpers/AppError');
-const { default: mongoose } = require('mongoose');
+const catchAsync = require("../../../helpers/catchAsync");
+const AppErr = require("../../../helpers/AppError");
+const { default: mongoose } = require("mongoose");
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -30,20 +30,20 @@ module.exports = {
       },
     });
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: itemCategory,
     });
   }),
   createCategory: catchAsync(async (req, res, next) => {
     let { name, type, desc } = req.body;
     const schema = {
-      name: 'string|empty:false',
+      name: "string|empty:false",
     };
     const valid = v.validate(req.body, schema);
 
     if (valid.length) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: valid,
       });
     }
@@ -56,12 +56,12 @@ module.exports = {
     });
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: category,
     });
   }),
   updateCategory: catchAsync(async (req, res, next) => {
-    const filteredBody = filterObj(req.body, 'name', 'desc', 'type');
+    const filteredBody = filterObj(req.body, "name", "desc", "type");
 
     const updateItem = await ItemCategory.findByIdAndUpdate(
       req.query.id,
@@ -69,11 +69,11 @@ module.exports = {
       { new: true, runValidators: true }
     );
     if (!updateItem) {
-      return next(new AppErr('No item found with that ID', 404));
+      return next(new AppErr("No item found with that ID", 404));
     }
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: { updateItem },
     });
   }),
@@ -92,16 +92,16 @@ module.exports = {
       (sell = parseInt(req.body.sell)),
       (buying = parseInt(req.body.buying));
     const schema = {
-      weight: 'number|optional|empty:true',
-      purchasePrice: 'number|integer|positive',
-      isSell: 'boolean',
+      weight: "number|optional|empty:true",
+      purchasePrice: "number|integer|positive",
+      isSell: "boolean",
       category: {
-        type: 'object',
+        type: "object",
         $$strict: true,
         props: {
-          _id: 'string|empty:false',
-          name: 'string|empty:false',
-          desc: 'string',
+          _id: "string|empty:false",
+          name: "string|empty:false",
+          desc: "string",
         },
       },
     };
@@ -109,7 +109,7 @@ module.exports = {
 
     if (valid.length) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: valid,
       });
     }
@@ -123,27 +123,25 @@ module.exports = {
       weight,
       isSell,
       note,
-      // imageCover: req.imageCover,
-      // images: req.images,
     });
 
     res.status(201).json({
-      status: 'success',
+      status: "success",
       data: dataItem,
     });
   }),
   updateItem: catchAsync(async (req, res, next) => {
     const filteredBody = filterObj(
       req.body,
-      'name',
-      'weight',
-      'sellingPrice',
-      'purchasePrice',
-      'category',
-      'isSell',
-      'note'
+      "name",
+      "weight",
+      "sellingPrice",
+      "purchasePrice",
+      "category",
+      "isSell",
+      "note"
     );
-
+    console.log(filteredBody);
     if (req.images) {
       filteredBody.images = req.images;
     }
@@ -154,35 +152,35 @@ module.exports = {
       { new: true, runValidators: true }
     );
     if (!updateItem) {
-      return next(new AppErr('No item found with that ID', 404));
+      return next(new AppErr("No item found with that ID", 404));
     }
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: { updateItem },
     });
   }),
   deleteItem: catchAsync(async (req, res, next) => {
     const doc = await Item.findByIdAndDelete(req.query.id);
     if (!doc) {
-      return next(new AppErr('No document found with that ID', 404));
+      return next(new AppErr("No document found with that ID", 404));
     }
 
     res.status(200).json({
-      status: 'success',
-      message: 'document has been deleted',
+      status: "success",
+      message: "document has been deleted",
     });
   }),
   getItem: catchAsync(async (req, res, next) => {
     let query = await Item.findById(req.params.slug).select(
-      '-__v -createdAt -updatedAt'
+      "-__v -createdAt -updatedAt"
     );
 
     if (!query) {
-      return next(new AppErr('No item found with that ID', 404));
+      return next(new AppErr("No item found with that ID", 404));
     }
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: query,
     });
   }),
@@ -190,17 +188,17 @@ module.exports = {
     const features = new apiFeature(
       Item.find({
         userID: req.organization._id,
-      }).select('-__v -createdAt -updatedAt'),
+      }).select("-__v -createdAt -updatedAt"),
       req.query
     ).paginate();
 
     const itemData = await features.query;
 
     if (!itemData || itemData == null) {
-      return next(new AppErr('No item found with that ID', 404));
+      return next(new AppErr("No item found with that ID", 404));
     }
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: itemData,
     });
   }),
@@ -210,16 +208,16 @@ module.exports = {
       companyId: mongoose.Types.ObjectId(req.organization._id),
     };
     const groupBy = {
-      item_id: '$item_id',
+      item_id: "$item_id",
     };
 
     if (year) {
-      matchQuery['date.year'] = parseInt(year);
-      groupBy['year'] = '$date.year';
+      matchQuery["date.year"] = parseInt(year);
+      groupBy["year"] = "$date.year";
     }
     if (month) {
-      matchQuery['date.month'] = parseInt(month);
-      groupBy['month'] = '$date.month';
+      matchQuery["date.month"] = parseInt(month);
+      groupBy["month"] = "$date.month";
     }
 
     const summary = await DetailTransactionN.aggregate([
@@ -229,24 +227,24 @@ module.exports = {
       {
         $group: {
           _id: groupBy,
-          item_name: { $first: '$item_name' },
+          item_name: { $first: "$item_name" },
           total_weight: {
-            $sum: '$weight',
+            $sum: "$weight",
           },
         },
       },
       {
         $project: {
           _id: 0,
-          item_id: '$_id.item_id',
-          item_name: '$item_name',
-          total_weight: '$total_weight',
+          item_id: "$_id.item_id",
+          item_name: "$item_name",
+          total_weight: "$total_weight",
         },
       },
     ]);
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: summary,
     });
   }),

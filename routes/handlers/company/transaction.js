@@ -276,7 +276,7 @@ module.exports = {
 
     await userClient.findByIdAndUpdate(checkTrans[0].customerID, {
       $inc: {
-        balance: checkTrans[0].detail.reduce(function (acc, obj) {
+          balance: checkTrans[0].detail.reduce(function (acc, obj) {
           return acc + obj.totalPrice;
         }, 0),
       },
