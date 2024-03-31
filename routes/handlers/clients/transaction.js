@@ -37,33 +37,12 @@ module.exports = {
           foreignField: 'transactionID',
           pipeline: [
             {
-              $lookup: {
-                from: Item.collection.name,
-                localField: 'itemID',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 0,
-                      id: '$_id',
-                      name: '$name',
-                      category: '$category',
-                      price: '$purchasePrice',
-                    },
-                  },
-                ],
-                as: 'Item',
-              },
-            },
-            { $unwind: '$Item' },
-            {
               $project: {
                 _id: '$Item.id',
-                name: '$Item.name',
-                item: '$Item.category',
+                name: '$name',
                 weight: '$weight',
-                price: '$Item.price',
-                totalPrice: { $sum: { $multiply: ['$weight', '$Item.price'] } },
+                price: '$price',
+                totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
                 status: '$status',
               },
             },
@@ -123,7 +102,6 @@ module.exports = {
         new AppErr('No document found with that Transaction ID', 404)
       );
     }
-
     res.status(200).json({
       message: 'success',
       data: checkTrans[0],
@@ -176,32 +154,11 @@ module.exports = {
             foreignField: 'transactionID',
             pipeline: [
               {
-                $lookup: {
-                  from: Item.collection.name,
-                  localField: 'itemID',
-                  foreignField: '_id',
-                  pipeline: [
-                    {
-                      $project: {
-                        _id: 0,
-                        id: '$_id',
-                        name: '$name',
-                        category: '$category',
-                        price: '$purchasePrice',
-                      },
-                    },
-                  ],
-                  as: 'Item',
-                },
-              },
-              { $unwind: '$Item' },
-              {
                 $project: {
-                  _id: '$Item.id',
                   weight: '$weight',
-                  price: '$Item.price',
+                  price: '$price',
                   totalPrice: {
-                    $sum: { $multiply: ['$weight', '$Item.price'] },
+                    $sum: { $multiply: ['$weight', '$price'] },
                   },
                 },
               },

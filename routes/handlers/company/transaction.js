@@ -61,32 +61,11 @@ module.exports = {
             foreignField: 'transactionID',
             pipeline: [
               {
-                $lookup: {
-                  from: Item.collection.name,
-                  localField: 'itemID',
-                  foreignField: '_id',
-                  pipeline: [
-                    {
-                      $project: {
-                        _id: 0,
-                        id: '$_id',
-                        name: '$name',
-                        category: '$category',
-                        price: '$purchasePrice',
-                      },
-                    },
-                  ],
-                  as: 'Item',
-                },
-              },
-              { $unwind: '$Item' },
-              {
                 $project: {
-                  _id: '$Item.id',
                   weight: '$weight',
-                  price: '$Item.price',
+                  price: '$price',
                   totalPrice: {
-                    $sum: { $multiply: ['$weight', '$Item.price'] },
+                    $sum: { $multiply: ['$weight', '$price'] },
                   },
                 },
               },
@@ -134,34 +113,14 @@ module.exports = {
           localField: '_id',
           foreignField: 'transactionID',
           pipeline: [
-            {
-              $lookup: {
-                from: Item.collection.name,
-                localField: 'itemID',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 0,
-                      id: '$_id',
-                      name: '$name',
-                      category: '$category',
-                      price: '$purchasePrice',
-                    },
-                  },
-                ],
-                as: 'Item',
-              },
-            },
-            { $unwind: '$Item' },
+
             {
               $project: {
-                _id: '$Item.id',
-                name: '$Item.name',
-                item: '$Item.category',
+                name: '$name',
+                // item: '$Item.category',
                 weight: '$weight',
-                price: '$Item.price',
-                totalPrice: { $sum: { $multiply: ['$weight', '$Item.price'] } },
+                price: '$price',
+                totalPrice: { $sum: { $multiply: ['$weight', '$price'] } },
                 status: '$status',
               },
             },
@@ -223,7 +182,6 @@ module.exports = {
         new AppErr('No document found with that Transaction ID', 404)
       );
     }
-
     res.status(200).json({
       message: 'success',
       data: checkTrans[0],
@@ -231,13 +189,14 @@ module.exports = {
   }),
   createTrans: catchAsync(async (req, res, next) => {
     const { item, customerID } = req.body;
-
     const schema = {
       customerID: 'string|empty:false',
       item: {
         type: 'array',
         itemID: 'string|empty:false',
         weight: 'string|empty:false',
+        price: 'number|empty:false',
+        name: 'string|empty:false',
       },
     };
     const valid = v.validate(req.body, schema);
@@ -257,6 +216,7 @@ module.exports = {
 
     for (let i = 0; i < item.length; i++) {
       const checkItem = await Item.findById(item[i].itemID);
+
       if (!checkItem) {
         return next(new AppErr('No document found with that item', 404));
       }
@@ -264,6 +224,8 @@ module.exports = {
         transactionID: trans._id,
         itemID: item[i].itemID,
         weight: item[i].weight,
+        price: item[i].price,
+        name: item[i].name,
       });
     }
 
@@ -319,10 +281,129 @@ module.exports = {
         }, 0),
       },
     });
-
     res.status(201).json({
       status: 'success',
       data: { id: trans._id },
     });
   }),
+
+
+  summaryTransaction: catchAsync(async (req, res, next) => {
+    const { month, year } = req.query;
+    const matchQuery = {};
+
+    if (year) {
+      matchQuery['year'] = parseInt(year);
+    }
+    if (month) {
+      matchQuery['month'] = parseInt(month);
+    }
+    const summary = await Transaction.aggregate([
+      {
+        $lookup: {
+          from: userClient.collection.name,
+          localField: "customerID",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $match: {
+                companyID: mongoose.Types.ObjectId(req.organization._id),
+              },
+            },
+            {
+              $project: {
+                fullName: "$fullName",
+                sex: "$sex",
+                photo: "$photo",
+                balance: "$balance",
+              },
+            },
+          ],
+          as: "Customer",
+        },
+      },
+      {
+        $unwind: "$Customer",
+      },
+      {
+        $lookup: {
+          from: DetailTransaction.collection.name,
+          localField: "_id",
+          foreignField: "transactionID",
+          pipeline: [
+            {
+              $project: {
+                weight: "$weight",
+                price: "$price",
+                totalPrice: {
+                  $sum: {
+                    $multiply: ["$weight", "$price"],
+                  },
+                },
+              },
+            },
+          ],
+          as: "Details",
+        },
+      },
+      {
+        $project: {
+          totalPrice: {
+            $sum: "$Details.totalPrice",
+          },
+          year: {
+            $year: "$createdAt",
+          },
+          month: {
+            $month: "$createdAt",
+          },
+          day: {
+            $dayOfMonth: "$createdAt",
+          },
+          date: {
+            $dayOfYear: "$createdAt",
+          },
+        },
+      },
+      {
+        $match: matchQuery,
+      },
+      {
+        $group: {
+          _id: "$date",
+          // Group by the formatted date
+          year: {
+            $first: "$year",
+          },
+          // Retain the year
+          month: {
+            $first: "$month",
+          },
+          // Retain the month
+          day: {
+            $first: "$day",
+          },
+          // Retain the day
+          totalSum: {
+            $sum: "$totalPrice",
+          }, // Calculate the total price for each day
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+    ]);
+  
+
+    res.status(200).json({
+      status: 'success',
+      data: summary,
+    });
+  }),
+
 };
+
+
+
