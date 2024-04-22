@@ -7,7 +7,7 @@ const v = new Validator();
 // Api Feature
 const apiFeature = require('../../../helpers/apiFeature');
 // Model
-const Transaction = require('../../../models/InterestTransaction');
+const InterestTransaction = require('../../../models/InterestTransaction');
 
 
 const mongoose = require('mongoose');
@@ -23,12 +23,14 @@ const filterObj = (obj, ...allowedFields) => {
 
 module.exports = {
     createInterestTransaction: catchAsync(async (req, res, next) => {
-        const { interest, balance } = req.query;
-
         await InterestTransaction.create({
-            customerID,
-            interest: interest,
-            balance: balance,
+            customerID: req.body.customerID,
+            interest: req.body.interestRate,
+            balance: req.body.totalBalance,
+        });
+
+        res.status(201).json({
+            status: 'success',
         });
     }
     )
