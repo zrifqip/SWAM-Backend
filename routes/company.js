@@ -18,6 +18,7 @@ const transactionHandler = require("./handlers/company/transaction");
 const withdrawHandler = require("./handlers/company/withdrawal");
 const chatHandler = require("./handlers/company/chat");
 const customerHandler = require("./handlers/company/customer");
+const interestHandler = require("./handlers/company/interest");
 const roleC = require("../middlewares/roleUser");
 const checkVersion = require("../middlewares/Appversion");
 
@@ -89,6 +90,10 @@ router
   .patch(customerHandler.Update);
 router.get("/customer/detail/:slug", customerHandler.getCustomer);
 router.patch("/customer/detail", customerHandler.Edit);
+
+router
+  .route("/interest")
+  .post(interestHandler.createInterestTransaction)
 
 router.post("/startchat", chatHandler.start);
 router.get("/chat", chatHandler.list);
