@@ -30,5 +30,6 @@
 2. Go to the new project directory and open the terminal and run `npm install`
 3. Make sure mongodb is running by starting it using `mongod`
 4. Run the backend locally using `npm run dev`
+5. Your backend should be running locally now
 
 
