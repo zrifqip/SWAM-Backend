@@ -8,7 +8,7 @@
 
 ### Steps to Run the backend locally
 1. Open your terminal and run the following command `git clone https://github.com/zrifqip/SWAM-Backend.git`
-2. Go to the new project directory and open the terminal and run `npm install`
+2. Go to the new project directory, open the terminal and run `npm install`
 3. Make sure mongodb is running by starting it using `mongod`
 4. Run the backend locally using `npm run dev`
 5. Your backend should be running locally now
